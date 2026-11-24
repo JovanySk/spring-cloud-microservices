@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: api-gateway
+  config:
+    # Port, Eureka address, etc. come from the Config Server (config-repo/api-gateway*.yml)
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # /api/catalog/products/1  ->  catalog-service /products/1
+            - id: catalog-service
+              uri: lb://catalog-service
+              predicates:
+                - Path=/api/catalog/**
+              filters:
+                - StripPrefix=2
+            # /api/inventory/BRD-001  ->  inventory-service /inventory/BRD-001
+            - id: inventory-service
+              uri: lb://inventory-service
+              predicates:
+                - Path=/api/inventory/**
+              filters:
+                - StripPrefix=1
+            # /api/orders/5  ->  order-service /orders/5
+            - id: order-service
+              uri: lb://order-service
+              predicates:
+                - Path=/api/orders/**
+              filters:
+                - StripPrefix=1

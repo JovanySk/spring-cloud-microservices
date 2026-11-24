@@ -1,0 +1,114 @@
+# Starts the whole system with the "docker" profile.
+#   docker compose up --build
+# Start order is enforced with healthchecks:
+#   config-server -> discovery-server -> catalog / inventory / order -> api-gateway
+
+x-healthcheck: &actuator-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 12
+  start_period: 30s
+
+x-business-service: &business-service
+  restart: on-failure
+  environment: &business-env
+    SPRING_PROFILES_ACTIVE: docker
+    CONFIG_SERVER_URL: http://config-server:8888
+    JAVA_OPTS: -Xmx256m
+  depends_on:
+    config-server:
+      condition: service_healthy
+    discovery-server:
+      condition: service_healthy
+
+services:
+  config-server:
+    build:
+      context: .
+      args:
+        MODULE: config-server
+    image: bakery/config-server
+    environment:
+      CONFIG_REPO_PATH: /config-repo
+      JAVA_OPTS: -Xmx256m
+    volumes:
+      - ./config-repo:/config-repo:ro
+    ports:
+      - "8888:8888"
+    healthcheck:
+      <<: *actuator-healthcheck
+      test: ["CMD", "curl", "-fs", "http://localhost:8888/actuator/health"]
+
+  discovery-server:
+    build:
+      context: .
+      args:
+        MODULE: discovery-server
+    image: bakery/discovery-server
+    environment:
+      EUREKA_HOSTNAME: discovery-server
+      JAVA_OPTS: -Xmx256m
+    ports:
+      - "8761:8761"
+    healthcheck:
+      <<: *actuator-healthcheck
+      test: ["CMD", "curl", "-fs", "http://localhost:8761/actuator/health"]
+
+  catalog-service:
+    <<: *business-service
+    build:
+      context: .
+      args:
+        MODULE: catalog-service
+    image: bakery/catalog-service
+    healthcheck:
+      <<: *actuator-healthcheck
+      test: ["CMD", "curl", "-fs", "http://localhost:8081/actuator/health"]
+
+  inventory-service:
+    <<: *business-service
+    build:
+      context: .
+      args:
+        MODULE: inventory-service
+    image: bakery/inventory-service
+    healthcheck:
+      <<: *actuator-healthcheck
+      test: ["CMD", "curl", "-fs", "http://localhost:8082/actuator/health"]
+
+  order-service:
+    <<: *business-service
+    build:
+      context: .
+      args:
+        MODULE: order-service
+    image: bakery/order-service
+    healthcheck:
+      <<: *actuator-healthcheck
+      test: ["CMD", "curl", "-fs", "http://localhost:8083/actuator/health"]
+
+  api-gateway:
+    build:
+      context: .
+      args:
+        MODULE: api-gateway
+    image: bakery/api-gateway
+    restart: on-failure
+    environment:
+      <<: *business-env
+    ports:
+      - "8080:8080"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      inventory-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+    healthcheck:
+      <<: *actuator-healthcheck
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/actuator/health"]

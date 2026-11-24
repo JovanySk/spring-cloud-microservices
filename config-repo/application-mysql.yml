@@ -1,0 +1,13 @@
+# Optional "mysql" profile. Values come ONLY from environment variables (no secrets in files).
+# Each service gets its own database, e.g. DB_URL=jdbc:mysql://mysql:3306/catalog_db
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  h2:
+    console:
+      enabled: false

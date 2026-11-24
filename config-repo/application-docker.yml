@@ -1,0 +1,6 @@
+# Shared overrides when a service runs with the "docker" profile (docker-compose).
+# Containers find each other by their compose service name.
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/

@@ -1,0 +1,26 @@
+# Shared by ALL services that read from the Config Server (local / default profile).
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    # Refresh the local copy of the registry often so new/stopped instances are noticed quickly
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+spring:
+  cloud:
+    loadbalancer:
+      cache:
+        ttl: 10s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

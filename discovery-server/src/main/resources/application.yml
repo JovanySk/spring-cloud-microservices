@@ -1,0 +1,24 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: discovery-server
+
+eureka:
+  instance:
+    hostname: ${EUREKA_HOSTNAME:localhost}
+  client:
+    # The registry itself is not a client: do not register or fetch from another Eureka
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    # Small demo project: evict stopped instances quickly instead of protecting the registry
+    enable-self-preservation: false
+    eviction-interval-timer-in-ms: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

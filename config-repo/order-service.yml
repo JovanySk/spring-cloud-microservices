@@ -1,0 +1,25 @@
+server:
+  port: 8083
+
+spring:
+  datasource:
+    # Own in-memory database: no other service can read these tables
+    url: jdbc:h2:mem:orderdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
+  cloud:
+    openfeign:
+      client:
+        config:
+          # HTTP calls to catalog-service / inventory-service.
+          # Short timeouts: if a dependency hangs we answer 503 fast instead of blocking the client.
+          default:
+            connect-timeout: 2000
+            read-timeout: 3000

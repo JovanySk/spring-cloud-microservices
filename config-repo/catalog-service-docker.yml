@@ -1,0 +1,10 @@
+# Overrides for catalog-service inside Docker
+spring:
+  h2:
+    console:
+      enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.jovany.bakery: INFO

@@ -1,0 +1,4 @@
+# Overrides for api-gateway inside Docker
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO

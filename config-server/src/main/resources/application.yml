@@ -1,0 +1,21 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  profiles:
+    # "native" = read the yml files from the file system instead of a Git repository
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          # Run from the repository root locally; in Docker the folder is mounted and CONFIG_REPO_PATH is set
+          search-locations: file:${CONFIG_REPO_PATH:./config-repo}/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

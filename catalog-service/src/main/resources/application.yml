@@ -1,0 +1,6 @@
+spring:
+  application:
+    # Name used to load config-repo/catalog-service*.yml and to register in Eureka
+    name: catalog-service
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}

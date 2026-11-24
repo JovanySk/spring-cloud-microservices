@@ -1,0 +1,3 @@
+# Keep Unix line endings for the shell wrapper so it runs in Linux CI and Docker
+mvnw text eol=lf
+*.cmd text eol=crlf
