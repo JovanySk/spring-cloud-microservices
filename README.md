@@ -40,7 +40,7 @@ Author: **Jovany Morales del Ángel** · MIT License
 |---|---|---|
 | `config-server` | 8888 | Spring Cloud Config Server (`native` profile) serving the yml files in `config-repo/` |
 | `discovery-server` | 8761 | Eureka server; dashboard at http://localhost:8761 |
-| `api-gateway` | 8080 | Spring Cloud Gateway; the only port clients need |
+| `api-gateway` | 8080 | Spring Cloud Gateway; the only port clients need. Also serves the ops console at `/` |
 | `catalog-service` | 8081 | Products: id, sku, name, price |
 | `inventory-service` | 8082 | Stock per SKU; reserves units atomically |
 | `order-service` | 8083 | Creates orders using catalog (prices) and inventory (stock) |
@@ -76,6 +76,7 @@ spring-cloud-microservices/
 | POST | `/api/inventory/{sku}/reserve` | Body `{"quantity": 2}` → 200, or **409** if not enough stock |
 | POST | `/api/orders` | Body `{"items":[{"sku":"PST-001","quantity":3}]}` → **201** |
 | GET | `/api/orders/{id}` | Order with its lines and total |
+| GET | `/console/api/status` | Read-only status for the ops console (Eureka instances + their health) |
 
 Errors use the standard `application/problem+json` format:
 
@@ -150,6 +151,37 @@ DB_URL=jdbc:mysql://localhost:3306/catalog_db DB_USERNAME=bakery DB_PASSWORD=***
 java -jar catalog-service/target/catalog-service.jar
 ```
 
+## Ops console
+
+The gateway also serves a small **ops console** at **http://localhost:8080/** (static HTML, CSS and plain
+JavaScript in `api-gateway/src/main/resources/static/`, no build step and no external fonts or CDNs).
+Start the system with Option A or B above, wait until everything is registered, and open that URL.
+
+- **Architecture map**: gateway, the three services, Eureka and the Config Server, each with its live status.
+  The status comes from `GET /console/api/status`, a read-only gateway endpoint that asks the
+  `DiscoveryClient` which instances are registered and calls `/actuator/health` on each one
+  (plus Eureka and the Config Server). The health call decides UP or DOWN, so a dead process is
+  shown as DOWN even while Eureka still lists it.
+- **Catalog and stock**: `GET /api/catalog/products` and `GET /api/inventory/{sku}` per product.
+- **Place order**: builds `POST /api/orders`, shows the 201 order or the `problem+json` error (404, 409, 503)
+  as a card, and animates the hops on the map (gateway, order-service, catalog, inventory). The failing hop is drawn in red.
+- **Chaos test**: stop inventory-service and the banner turns amber within seconds; orders then get a
+  controlled **503** instead of hanging.
+- **Recent requests** with status and latency, and an **EN / ES** toggle.
+
+| | |
+|---|---|
+| ![All services UP, catalog and stock](docs/screenshots/01-console-healthy.png) | ![Order created, request path highlighted](docs/screenshots/02-order-created.png) |
+| All services UP, products and live stock | `201 Created`, request path highlighted on the map |
+| ![409 not enough stock](docs/screenshots/03-insufficient-stock.png) | ![inventory-service stopped, amber banner and 503](docs/screenshots/04-inventory-down.png) |
+| `409 Conflict`: CAK-001 x10, the inventory hop fails | inventory-service stopped: amber banner, controlled `503` |
+| ![Eureka dashboard](docs/screenshots/05-eureka.png) | <img src="docs/screenshots/06-mobile.png" alt="Ops console on a phone" width="260"> |
+| The real Eureka dashboard with every service registered | Phone layout (390 x 844) |
+
+```bash
+curl http://localhost:8080/console/api/status   # {"overall":"UP","infrastructure":[...],"services":[...]}
+```
+
 ## Design decisions
 
 **Why service discovery (Eureka)?**
@@ -191,13 +223,16 @@ The order stores a copy of the product name and price, so a later price change d
 ./mvnw -B verify          # Windows: mvnw.cmd -B verify
 ```
 
-41 JUnit 5 tests, no external services needed (Config Server and Eureka are disabled in tests):
+49 JUnit 5 tests, no external services needed (Config Server and Eureka are disabled in tests):
 
 - **order-service** – business logic with mocked Feign clients (success, total computation, 409, unknown SKU, catalog/inventory down → 503),
   MockMvc controller tests and a full-context test with H2.
 - **inventory-service** – controller tests and service tests against H2 (atomic reservation, insufficient stock).
 - **catalog-service** – controller tests and seed-data test.
-- **api-gateway** – the three routes load from configuration and point to `lb://` service ids.
+- **api-gateway** – the three routes load from configuration and point to `lb://` service ids; the console
+  status endpoint with a mocked `DiscoveryClient` and health probe (all UP, instance DOWN while still registered,
+  no instance registered, one healthy instance out of two, infrastructure DOWN, registry error) via `WebTestClient`;
+  and the full context serving the page at `/` and the status endpoint without Eureka.
 - **config-server** – serves `catalog-service/default` and the Docker overrides from `config-repo/`.
 - **discovery-server** – Eureka starts and is healthy.
 

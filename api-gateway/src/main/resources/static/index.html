@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Bakery Ops Console</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%237aa2ff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="console/console.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 26 26" width="26" height="26"><path d="M8 13h10M13 13l5-5M13 13l5 5" stroke="#0a1020" stroke-width="1.6" stroke-linecap="round" fill="none"/><circle cx="8" cy="13" r="2.4" fill="#0a1020"/><circle cx="18.5" cy="7.5" r="1.8" fill="#0a1020"/><circle cx="18.5" cy="18.5" r="1.8" fill="#0a1020"/><circle cx="19" cy="13" r="1.8" fill="#0a1020"/></svg></span>
+      <div class="brand-text">
+        <strong>Bakery Shop</strong>
+        <span data-i18n="subtitle">Ops console</span>
+      </div>
+    </div>
+    <div class="topbar-meta">
+      <span class="chip mono" title="api-gateway"><span class="dot" id="gw-dot"></span><span id="gw-origin">localhost:8080</span></span>
+      <span class="meta-text" id="checked-at" aria-live="polite"></span>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="es" aria-pressed="false">ES</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="banner" id="banner" data-state="unknown" aria-live="polite">
+    <span class="banner-dot" aria-hidden="true"></span>
+    <div class="banner-body">
+      <strong id="banner-title" data-i18n="bannerChecking">Checking services...</strong>
+      <span id="banner-text"></span>
+    </div>
+    <details class="chaos">
+      <summary data-i18n="chaosSummary">Chaos test</summary>
+      <div class="chaos-body">
+        <p data-i18n="chaos1">1. Stop inventory-service (Ctrl+C in its terminal, or stop its container).</p>
+        <p data-i18n="chaos2">2. Within a few seconds this banner turns amber and its node goes DOWN.</p>
+        <p data-i18n="chaos3">3. Place an order: order-service answers a controlled 503 problem+json, never a hang or a 500.</p>
+        <p data-i18n="chaos4">4. Start it again: Eureka picks it up and orders work again.</p>
+      </div>
+    </details>
+  </section>
+
+  <main class="grid">
+
+    <section class="panel panel-map" aria-labelledby="map-title">
+      <div class="panel-head">
+        <div>
+          <h2 id="map-title" data-i18n="mapTitle">Architecture</h2>
+          <p class="panel-sub" data-i18n="mapSub">Live from Eureka and each instance's /actuator/health</p>
+        </div>
+        <div class="legend">
+          <span><i class="lg lg-up"></i>UP</span>
+          <span><i class="lg lg-down"></i>DOWN</span>
+          <span><i class="lg lg-route"></i><span data-i18n="legendRoute">route</span></span>
+          <span><i class="lg lg-feign"></i>Feign</span>
+          <span><i class="lg lg-bus"></i><span data-i18n="legendBus">control plane</span></span>
+        </div>
+      </div>
+      <div class="map-wrap">
+        <svg id="map" role="img" aria-label="Architecture map"></svg>
+      </div>
+    </section>
+
+    <section class="panel panel-order" aria-labelledby="order-title">
+      <div class="panel-head">
+        <div>
+          <h2 id="order-title" data-i18n="orderTitle">Place order</h2>
+          <p class="panel-sub mono">POST /api/orders</p>
+        </div>
+      </div>
+      <form id="order-form" novalidate>
+        <div class="lines" id="lines"></div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="add-line" data-i18n="addLine">Add line</button>
+          <button type="submit" class="btn btn-primary" id="submit-order" data-i18n="submitOrder">Place order</button>
+        </div>
+      </form>
+      <div class="result" id="result" aria-live="polite">
+        <p class="empty" data-i18n="resultEmpty">The response will appear here, with its status and the hops it took.</p>
+      </div>
+    </section>
+
+    <section class="panel panel-catalog" aria-labelledby="catalog-title">
+      <div class="panel-head">
+        <div>
+          <h2 id="catalog-title" data-i18n="catalogTitle">Catalog and stock</h2>
+          <p class="panel-sub mono">GET /api/catalog/products · GET /api/inventory/{sku}</p>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="reload-catalog" data-i18n="reload">Reload</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="catalog">
+          <thead>
+            <tr>
+              <th class="sku-h">SKU</th>
+              <th data-i18n="colProduct">Product</th>
+              <th class="num" data-i18n="colPrice">Price</th>
+              <th data-i18n="colStock">Stock</th>
+              <th class="sr-only" data-i18n="colActions">Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel panel-log" aria-labelledby="log-title">
+      <div class="panel-head">
+        <div>
+          <h2 id="log-title" data-i18n="logTitle">Recent requests</h2>
+          <p class="panel-sub" data-i18n="logSub">Through the gateway, newest first</p>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="clear-log" data-i18n="clear">Clear</button>
+      </div>
+      <ol class="log" id="log"></ol>
+    </section>
+
+  </main>
+</div>
+<script src="console/console.js"></script>
+</body>
+</html>

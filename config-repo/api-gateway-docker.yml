@@ -2,3 +2,6 @@
 logging:
   level:
     org.springframework.cloud.gateway: INFO
+# The ops console probes Eureka's own health endpoint by its compose name
+console:
+  eureka-url: http://discovery-server:8761
