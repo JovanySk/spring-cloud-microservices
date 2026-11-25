@@ -5,7 +5,7 @@ behind an **API Gateway**, with **Eureka service discovery** and a **centralized
 Each service owns its own database, no service has another service's URL hardcoded, configuration
 is separated by environment, and everything can run with Docker Compose.
 
-Author: **Jovany Morales del Ángel** · MIT License
+Author: **Jovany Morales del Ángel** · © 2026 All rights reserved.
 
 ---
 
